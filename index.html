@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnglishFlow — Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <div class="logo">English<span>Flow</span></div>
+  <div>🟢 Chat</div>
+</header>
+
+<main>
+
+  <section class="chat-card">
+
+    <div class="chat-head">
+      <div class="avatar">EF</div>
+
+      <div>
+        <h1>Talk with me</h1>
+        <p>EnglishFlow chat</p>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+
+      <div class="message owner">
+        <div class="bubble">
+          Hi! 👋 Welcome to EnglishFlow.
+        </div>
+        <span>Now</span>
+      </div>
+
+      <div class="message owner">
+        <div class="bubble">
+          Send me a message and let's talk.
+        </div>
+        <span>Now</span>
+      </div>
+
+    </div>
+
+    <form id="chatForm">
+
+      <input
+        id="nameInput"
+        maxlength="30"
+        placeholder="Your name"
+        required
+      >
+
+      <div class="row">
+
+        <input
+          id="messageInput"
+          maxlength="500"
+          placeholder="Write a message..."
+          required
+        >
+
+        <button type="submit">
+          Send
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+  <p class="notice">
+    This is the chat interface.
+  </p>
+
+</main>
+
+<footer>
+
+  <div class="logo">
+    English<span>Flow</span>
+  </div>
+
+  <p>
+    Learn a little. Practice every day. 🚀
+  </p>
+
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
