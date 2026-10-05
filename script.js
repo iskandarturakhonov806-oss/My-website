@@ -56,7 +56,7 @@ let localStream = null;
 
 let currentCallId = null;
 
-let pendingIceCandidates = [];
+let pendingOffer = null;
 
 
 // ==================================================
