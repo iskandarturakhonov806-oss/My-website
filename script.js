@@ -1546,7 +1546,23 @@ voiceButton.addEventListener(
 
   }
 );
-
+supabaseClient
+  .channel("messages-realtime")
+  .on(
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    },
+    (payload) => {
+      console.log("NEW MESSAGE:", payload.new);
+      addMessage(payload.new);
+    }
+  )
+  .subscribe((status) => {
+    console.log("Messages realtime:", status);
+  });
 
 // ==================================================
 // START
