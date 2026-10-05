@@ -265,6 +265,33 @@ footer {
   footer {
     flex-direction: column;
     gap: 8px;
+    #voiceButton {
+  width: 58px;
+  min-width: 58px;
+  height: 48px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #7c3aed;
+  color: white;
+
+  font-size: 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+#voiceButton:hover {
+  background: #6d28d9;
+}
+
+#voiceButton:active {
+  transform: scale(0.95);
+}
   }
 
 }
