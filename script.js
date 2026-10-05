@@ -505,3 +505,62 @@ supabaseClient
 // ===============================
 
 loadMessages();
+// ===============================
+// VIDEO CALL - CAMERA TEST
+// ===============================
+
+const videoCallButton =
+  document.getElementById("videoCallButton");
+
+videoCallButton.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+
+      const video =
+        document.createElement("video");
+
+      video.id = "localVideo";
+
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+
+      video.srcObject = stream;
+
+      video.style.width = "100%";
+      video.style.maxWidth = "500px";
+      video.style.borderRadius = "20px";
+      video.style.marginTop = "15px";
+
+      document
+        .querySelector(".chat-card")
+        .appendChild(video);
+
+      videoCallButton.textContent =
+        "📹 Camera ON";
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Camera error:",
+        error
+      );
+
+      alert(
+        "Camera and microphone permission is required."
+      );
+
+    }
+
+  }
+);
