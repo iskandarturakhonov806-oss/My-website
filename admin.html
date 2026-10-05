@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>EnglishFlow — Admin</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
+  <style>
+
+    .admin-video-box {
+      padding: 16px;
+
+      border-top:
+        1px solid #292932;
+
+      background:
+        #090a0f;
+
+      display: none;
+    }
+
+    .admin-videos {
+      position: relative;
+
+      width: 100%;
+
+      max-width: 700px;
+
+      margin: auto;
+    }
+
+    #remoteVideo {
+      width: 100%;
+
+      min-height: 250px;
+
+      background: #000;
+
+      border-radius: 16px;
+
+      object-fit: cover;
+    }
+
+    #localVideo {
+      position: absolute;
+
+      right: 12px;
+
+      bottom: 12px;
+
+      width: 150px;
+
+      height: 110px;
+
+      background: #000;
+
+      border-radius: 12px;
+
+      object-fit: cover;
+
+      border: 2px solid white;
+    }
+
+    .call-controls {
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+
+      margin-top: 12px;
+
+      flex-wrap: wrap;
+    }
+
+    .call-controls button {
+      border: 0;
+
+      border-radius: 10px;
+
+      padding: 11px 18px;
+
+      color: white;
+
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    #callButton {
+      background: #16a34a;
+    }
+
+    #hangupButton {
+      background: #dc2626;
+    }
+
+    #callStatus {
+      color: #aaa;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+  <div class="logo">
+    English<span>Flow</span>
+  </div>
+
+  <div>
+    🔐 Admin Panel
+  </div>
+
+</header>
+
+
+<main>
+
+
+  <section class="chat-card">
+
+
+    <!-- HEADER -->
+
+    <div class="chat-head">
+
+      <div class="avatar">
+        EF
+      </div>
+
+      <div>
+
+        <h1>
+          Admin
+        </h1>
+
+        <p>
+          Messages & Video Call
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- MESSAGES -->
+
+    <div
+      id="messages"
+      class="messages"
+    >
+      Loading messages...
+    </div>
+
+
+    <!-- REPLY -->
+
+    <form
+      id="replyForm"
+    >
+
+      <div class="row">
+
+        <input
+          id="replyInput"
+          maxlength="500"
+          placeholder="Write a reply..."
+          required
+        >
+
+        <button
+          type="submit"
+        >
+          Reply
+        </button>
+
+      </div>
+
+    </form>
+
+
+    <!-- VIDEO -->
+
+    <div
+      id="adminVideoBox"
+      class="admin-video-box"
+    >
+
+      <div
+        class="admin-videos"
+      >
+
+        <video
+          id="remoteVideo"
+          autoplay
+          playsinline
+        ></video>
+
+        <video
+          id="localVideo"
+          autoplay
+          muted
+          playsinline
+        ></video>
+
+      </div>
+
+
+      <div
+        class="call-controls"
+      >
+
+        <button
+          id="callButton"
+          type="button"
+        >
+          📹 Call Visitor
+        </button>
+
+        <button
+          id="hangupButton"
+          type="button"
+        >
+          🔴 End Call
+        </button>
+
+        <span
+          id="callStatus"
+        >
+          Ready
+        </span>
+
+      </div>
+
+    </div>
+
+
+  </section>
+
+
+</main>
+
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
+
+
+<script>
+
+
+// ==================================================
+// SUPABASE
+// ==================================================
+
+const SUPABASE_URL =
+  "https://wcdekipnhcmskmieyaij.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_7SyUtBHnQDXvsvKywxIzFg_VelpqtPN";
+
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+// ==================================================
+// ELEMENTS
+// ==================================================
+
+const messagesBox =
+  document.getElementById(
+    "messages"
+  );
+
+const replyForm =
+  document.getElementById(
+    "replyForm"
+  );
+
+const replyInput =
+  document.getElementById(
+    "replyInput"
+  );
+
+const callButton =
+  document.getElementById(
+    "callButton"
+  );
+
+const hangupButton =
+  document.getElementById(
+    "hangupButton"
+  );
+
+const adminVideoBox =
+  document.getElementById(
+    "adminVideoBox"
+  );
+
+const remoteVideo =
+  document.getElementById(
+    "remoteVideo"
+  );
+
+const localVideo =
+  document.getElementById(
+    "localVideo"
+  );
+
+const callStatus =
+  document.getElementById(
+    "callStatus"
+  );
+
+
+// ==================================================
+// VIDEO
+// ==================================================
+
+const ROOM_ID =
+  "englishflow-main-room";
+
+
+const rtcConfig = {
+
+  iceServers: [
+
+    {
+      urls:
+        "stun:stun.l.google.com:19302"
+    },
+
+    {
+      urls:
+        "stun:stun1.l.google.com:19302"
+    }
+
+  ]
+
+};
+
+
+let peerConnection =
+  null;
+
+let localStream =
+  null;
+
+let currentCallId =
+  null;
+
+let pendingIceCandidates =
+  [];
+
+
+// ==================================================
+// STATUS
+// ==================================================
+
+function setCallStatus(
+  text
+) {
+
+  callStatus.textContent =
+    text;
+
+}
+
+
+// ==================================================
+// SHOW VIDEO
+// ==================================================
+
+function showVideo() {
+
+  adminVideoBox.style.display =
+    "block";
+
+}
+
+
+// ==================================================
+// GET CAMERA
+// ==================================================
+
+async function getLocalMedia() {
+
+  if (localStream) {
+
+    return localStream;
+
+  }
+
+
+  localStream =
+    await navigator.mediaDevices
+      .getUserMedia({
+
+        video: true,
+
+        audio: true
+
+      });
+
+
+  localVideo.srcObject =
+    localStream;
+
+
+  return localStream;
+
+}
+
+
+// ==================================================
+// CREATE PEER
+// ==================================================
+
+function createPeerConnection() {
+
+  if (peerConnection) {
+
+    peerConnection.close();
+
+  }
+
+
+  peerConnection =
+    new RTCPeerConnection(
+      rtcConfig
+    );
+
+
+  peerConnection.onicecandidate =
+    async (event) => {
+
+      if (
+        event.candidate &&
+        currentCallId
+      ) {
+
+        await sendSignal(
+          "ice",
+          {
+            candidate:
+              event.candidate
+          }
+        );
+
+      }
+
+    };
+
+
+  peerConnection.ontrack =
+    (event) => {
+
+      if (
+        event.streams &&
+        event.streams[0]
+      ) {
+
+        remoteVideo.srcObject =
+          event.streams[0];
+
+      }
+
+    };
+
+
+  peerConnection.onconnectionstatechange =
+    () => {
+
+      console.log(
+        "Connection:",
+        peerConnection.connectionState
+      );
+
+
+      if (
+        peerConnection.connectionState ===
+        "connected"
+      ) {
+
+        setCallStatus(
+          "🟢 Connected"
+        );
+
+      }
+
+
+      if (
+        peerConnection.connectionState ===
+        "disconnected"
+      ) {
+
+        setCallStatus(
+          "🟠 Disconnected"
+        );
+
+      }
+
+
+      if (
+        peerConnection.connectionState ===
+        "failed"
+      ) {
+
+        setCallStatus(
+          "🔴 Connection failed"
+        );
+
+      }
+
+    };
+
+
+  return peerConnection;
+
+}
+
+
+// ==================================================
+// SEND SIGNAL
+// ==================================================
+
+async function sendSignal(
+  type,
+  data
+) {
+
+  const { error } =
+    await supabaseClient
+      .from("calls")
+      .insert({
+
+        room_id:
+          ROOM_ID,
+
+        sender:
+          "admin",
+
+        type:
+          type,
+
+        data: {
+
+          call_id:
+            currentCallId,
+
+          ...data
+
+        }
+
+      });
+
+
+  if (error) {
+
+    console.error(
+      "Signal error:",
+      error
+    );
+
+  }
+
+}
+
+
+// ==================================================
+// START CALL
+// ==================================================
+
+async function startCall() {
+
+  if (currentCallId) {
+
+    alert(
+      "A call is already active."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    showVideo();
+
+    setCallStatus(
+      "Requesting camera..."
+    );
+
+
+    await getLocalMedia();
+
+
+    currentCallId =
+      crypto.randomUUID();
+
+
+    createPeerConnection();
+
+
+    localStream
+      .getTracks()
+      .forEach(
+        (track) => {
+
+          peerConnection
+            .addTrack(
+              track,
+              localStream
+            );
+
+        }
+      );
+
+
+    const offer =
+      await peerConnection
+        .createOffer();
+
+
+    await peerConnection
+      .setLocalDescription(
+        offer
+      );
+
+
+    setCallStatus(
+      "📞 Calling visitor..."
+    );
+
+
+    await sendSignal(
+      "offer",
+      {
+        offer: offer
+      }
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Start call error:",
+      error
+    );
+
+
+    alert(
+      "Camera/microphone permission is required."
+    );
+
+
+    closeCall();
+
+  }
+
+}
+
+
+// ==================================================
+// ADD ICE
+// ==================================================
+
+async function addIceCandidate(
+  candidate
+) {
+
+  if (
+    !peerConnection ||
+    !candidate
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    await peerConnection
+      .addIceCandidate(
+        new RTCIceCandidate(
+          candidate
+        )
+      );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "ICE error:",
+      error
+    );
+
+  }
+
+}
+
+
+// ==================================================
+// HANDLE SIGNAL
+// ==================================================
+
+async function handleSignal(
+  signal
+) {
+
+  const data =
+    signal.data || {};
+
+
+  const callId =
+    data.call_id;
+
+
+  if (
+    !callId ||
+    callId !== currentCallId
+  ) {
+
+    return;
+
+  }
+
+
+  // ================================================
+  // VISITOR ACCEPTED
+  // ================================================
+
+  if (
+    signal.type === "accepted" &&
+    signal.sender === "visitor"
+  ) {
+
+    setCallStatus(
+      "Visitor accepted. Connecting..."
+    );
+
+    return;
+
+  }
+
+
+  // ================================================
+  // ANSWER
+  // ================================================
+
+  if (
+    signal.type === "answer" &&
+    signal.sender === "visitor"
+  ) {
+
+    if (!peerConnection) {
+
+      return;
+
+    }
+
+
+    await peerConnection
+      .setRemoteDescription(
+        new RTCSessionDescription(
+          data.answer
+        )
+      );
+
+
+    for (
+      const candidate
+      of pendingIceCandidates
+    ) {
+
+      await addIceCandidate(
+        candidate
+      );
+
+    }
+
+
+    pendingIceCandidates =
+      [];
+
+
+    return;
+
+  }
+
+
+  // ================================================
+  // ICE
+  // ================================================
+
+  if (
+    signal.type === "ice" &&
+    signal.sender === "visitor"
+  ) {
+
+    if (
+      peerConnection &&
+      peerConnection.remoteDescription
+    ) {
+
+      await addIceCandidate(
+        data.candidate
+      );
+
+    }
+
+    else {
+
+      pendingIceCandidates.push(
+        data.candidate
+      );
+
+    }
+
+
+    return;
+
+  }
+
+
+  // ================================================
+  // REJECTED
+  // ================================================
+
+  if (
+    signal.type === "rejected"
+  ) {
+
+    alert(
+      "Visitor rejected the call."
+    );
+
+
+    closeCall();
+
+
+    return;
+
+  }
+
+
+  // ================================================
+  // HANGUP
+  // ================================================
+
+  if (
+    signal.type === "hangup"
+  ) {
+
+    closeCall();
+
+    return;
+
+  }
+
+}
+
+
+// ==================================================
+// HANG UP
+// ==================================================
+
+async function hangUpCall() {
+
+  if (currentCallId) {
+
+    await sendSignal(
+      "hangup",
+      {}
+    );
+
+  }
+
+
+  closeCall();
+
+}
+
+
+// ==================================================
+// CLOSE CALL
+// ==================================================
+
+function closeCall() {
+
+  if (peerConnection) {
+
+    peerConnection.close();
+
+    peerConnection =
+      null;
+
+  }
+
+
+  if (localStream) {
+
+    localStream
+      .getTracks()
+      .forEach(
+        (track) => {
+
+          track.stop();
+
+        }
+      );
+
+
+    localStream =
+      null;
+
+  }
+
+
+  localVideo.srcObject =
+    null;
+
+  remoteVideo.srcObject =
+    null;
+
+
+  currentCallId =
+    null;
+
+
+  pendingIceCandidates =
+    [];
+
+
+  setCallStatus(
+    "Ready"
+  );
+
+}
+
+
+// ==================================================
+// REALTIME CALL SIGNALING
+// ==================================================
+
+supabaseClient
+  .channel(
+    "admin-calls"
+  )
+
+  .on(
+
+    "postgres_changes",
+
+    {
+
+      event:
+        "INSERT",
+
+      schema:
+        "public",
+
+      table:
+        "calls"
+
+    },
+
+    async (payload) => {
+
+      console.log(
+        "CALL:",
+        payload.new
+      );
+
+
+      await handleSignal(
+        payload.new
+      );
+
+    }
+
+  )
+
+  .subscribe(
+    (status) => {
+
+      console.log(
+        "Call realtime:",
+        status
+      );
+
+    }
+  );
+
+
+// ==================================================
+// BUTTONS
+// ==================================================
+
+callButton.addEventListener(
+  "click",
+  startCall
+);
+
+
+hangupButton.addEventListener(
+  "click",
+  hangUpCall
+);
+
+
+// ==================================================
+// LOAD MESSAGES
+// ==================================================
+
+function showMessage(item) {
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+
+  message.className =
+    item.sender_type === "admin"
+      ? "message visitor"
+      : "message owner";
+
+
+  if (
+    item.message_type === "voice" &&
+    item.voice_url
+  ) {
+
+    const audio =
+      document.createElement(
+        "audio"
+      );
+
+
+    audio.controls =
+      true;
+
+    audio.src =
+      item.voice_url;
+
+
+    message.appendChild(
+      audio
+    );
+
+  }
+
+  else {
+
+    const bubble =
+      document.createElement(
+        "div"
+      );
+
+
+    bubble.className =
+      "bubble";
+
+
+    bubble.textContent =
+      item.message;
+
+
+    message.appendChild(
+      bubble
+    );
+
+  }
+
+
+  const name =
+    document.createElement(
+      "span"
+    );
+
+
+  name.textContent =
+    item.sender_type === "admin"
+      ? "You"
+      : item.name;
+
+
+  message.appendChild(
+    name
+  );
+
+
+  messagesBox.appendChild(
+    message
+  );
+
+}
+
+
+async function loadMessages() {
+
+  const { data, error } =
+    await supabaseClient
+      .from("messages")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(
+      error
+    );
+
+    messagesBox.textContent =
+      "Error loading messages.";
+
+    return;
+
+  }
+
+
+  messagesBox.innerHTML =
+    "";
+
+
+  data.forEach(
+    showMessage
+  );
+
+
+  messagesBox.scrollTop =
+    messagesBox.scrollHeight;
+
+}
+
+
+// ==================================================
+// REPLY
+// ==================================================
+
+replyForm.addEventListener(
+  "submit",
+  async (event) => {
+
+    event.preventDefault();
+
+
+    const text =
+      replyInput.value.trim();
+
+
+    if (!text) {
+
+      return;
+
+    }
+
+
+    const { error } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+
+          name:
+            "Admin",
+
+          message:
+            text,
+
+          sender_type:
+            "admin",
+
+          message_type:
+            "text"
+
+        });
+
+
+    if (error) {
+
+      console.error(
+        error
+      );
+
+      alert(
+        "Reply was not sent."
+      );
+
+      return;
+
+    }
+
+
+    replyInput.value =
+      "";
+
+    replyInput.focus();
+
+  }
+);
+
+
+// ==================================================
+// MESSAGE REALTIME
+// ==================================================
+
+supabaseClient
+  .channel(
+    "admin-messages"
+  )
+
+  .on(
+
+    "postgres_changes",
+
+    {
+
+      event:
+        "INSERT",
+
+      schema:
+        "public",
+
+      table:
+        "messages"
+
+    },
+
+    (payload) => {
+
+      showMessage(
+        payload.new
+      );
+
+
+      messagesBox.scrollTop =
+        messagesBox.scrollHeight;
+
+    }
+
+  )
+
+  .subscribe();
+
+
+// ==================================================
+// START
+// ==================================================
+
+loadMessages();
+
+</script>
+
+
+</body>
+
+  </html>
