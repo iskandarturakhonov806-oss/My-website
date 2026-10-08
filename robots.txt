@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://iskandarturakhonov806-oss.github.io/My-website/sitemap.xml
